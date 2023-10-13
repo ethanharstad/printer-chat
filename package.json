@@ -4,9 +4,8 @@
   "description": "Generative AI chatbot with general knowledge about 3d printers",
   "main": "index.js",
   "scripts": {
-    "dev": "wrangler pages dev ./public",
-    "deploy": "wrangler pages deploy ./public",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "wrangler dev --remote src/index.ts",
+    "deploy": "wrangler deploy --minify src/index.ts"
   },
   "author": "",
   "license": "ISC",

@@ -1,22 +1,25 @@
 import { Hono } from 'hono'
-import { handle } from 'hono/cloudflare-pages'
+import { serveStatic } from 'hono/cloudflare-workers'
 import { Ai } from '@cloudflare/ai'
 
 type Bindings = {
   AI: Ai
   DB: D1Database
-  VECTOR_INDEX: VectorizeIndex
+  VECTORIZE_INDEX: VectorizeIndex
 }
 
-const app = new Hono<{ Bindings: Bindings }>().basePath('/api')
+const app = new Hono<{ Bindings: Bindings }>()
 
-app.get('/status', (c) => {
+app.get('/api/status', (c) => {
   return c.json({
-    status: 'ok'
+    status: 'ok',
+    ai: c.env.AI,
+    db: c.env.DB,
+    VECTORIZE_INDEX: c.env.VECTORIZE_INDEX,
   })
 })
 
-app.post('/facts', async (c) => {
+app.post('/api/facts', async (c) => {
   const ai = new Ai(c.env.AI)
 
   console.log('Parsing request...')
@@ -45,7 +48,7 @@ app.post('/facts', async (c) => {
 
   console.log('Pushing to vector store...')
   try {
-    const inserted = await c.env.VECTOR_INDEX.upsert([
+    const inserted = await c.env.VECTORIZE_INDEX.upsert([
       { id, values }
     ])
     console.log('Pushed to vectore store')
@@ -58,7 +61,7 @@ app.post('/facts', async (c) => {
   }
 })
 
-app.post('/chat', async (c) => {
+app.post('/api/chat', async (c) => {
   const ai = new Ai(c.env.AI)
 
   const { text } = await c.req.json()
@@ -76,4 +79,6 @@ app.post('/chat', async (c) => {
   return c.json(response)
 })
 
-export const onRequest = handle(app)
+app.get('*', serveStatic({ root: './' }))
+
+export default app
